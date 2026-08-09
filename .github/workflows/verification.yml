@@ -1,0 +1,27 @@
+name: Source verification
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Compile public analysis sources
+        run: python -m py_compile audit_full.py analyze.py
+      - name: Verify release metadata
+        run: |
+          test -s README.md
+          test -s RESULTS.md
+          test -s CITATION.cff
+          test -s LICENSE

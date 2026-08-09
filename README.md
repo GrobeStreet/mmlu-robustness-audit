@@ -1,5 +1,10 @@
 # MMLU Robustness & Calibration Audit
 
+[![Source verification](https://github.com/GrobeStreet/mmlu-robustness-audit/actions/workflows/verification.yml/badge.svg)](https://github.com/GrobeStreet/mmlu-robustness-audit/actions/workflows/verification.yml)
+[![License: MIT](https://img.shields.io/badge/license-MIT-78e6c4.svg)](LICENSE)
+[![Citation metadata](https://img.shields.io/badge/citation-CFF-78e6c4.svg)](CITATION.cff)
+[![Status: transparent reconstruction](https://img.shields.io/badge/status-transparent_reconstruction-2a3b55.svg)](#repository-status-and-provenance)
+
 A small, reproducible stress test of multiple-choice benchmark validity.
 
 This audit asks a simple question: **does a model give the same underlying answer when the answer choices are cyclically reordered but the question itself is unchanged?**
