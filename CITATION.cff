@@ -1,0 +1,23 @@
+cff-version: 1.2.0
+message: "If you use this repository, please cite it."
+title: "MMLU Robustness & Calibration Audit"
+type: software
+authors:
+  - family-names: Morong
+    given-names: Bobby
+repository-code: "https://github.com/GrobeStreet/mmlu-robustness-audit"
+url: "https://github.com/GrobeStreet/mmlu-robustness-audit"
+license: MIT
+version: 1.0.0
+date-released: 2026-08-09
+abstract: >-
+  A reproducible stress test of multiple-choice benchmark validity that measures
+  answer stability under cyclic answer-option reordering and keeps robustness,
+  calibration, and accuracy as distinct quantities.
+keywords:
+  - MMLU
+  - benchmark robustness
+  - calibration
+  - evaluation
+  - language models
+  - reproducibility
