@@ -11,7 +11,7 @@ This audit asks: **does a model give the same underlying answer when answer choi
 
 ## Current evidence status
 
-The public harness has now been independently executed on `Qwen/Qwen2.5-0.5B-Instruct` under both bf16 and fp32. The central robustness finding regenerated; several historical calibration/stability quantities did not. The original July raw artifact is unavailable, so the repository preserves the historical table and the regenerated table separately rather than silently replacing either one.
+The public harness has now been separately regenerated on `Qwen/Qwen2.5-0.5B-Instruct` under both bf16 and fp32. The central robustness finding regenerated; several historical calibration/stability quantities did not. The original July raw artifact is unavailable, so the repository preserves the historical table and the regenerated table separately rather than silently replacing either one.
 
 See [`regeneration/REGENERATION.md`](regeneration/REGENERATION.md) and [`regeneration/PROVENANCE.json`](regeneration/PROVENANCE.json).
 
@@ -89,6 +89,6 @@ Prompt format is explicitly frozen as raw completion: question, blank line, A–
 
 ## Repository status and provenance
 
-This repository began as a transparent reconstruction of a documented July 2026 protocol. It now contains an independent Qwen regeneration with **partial metric agreement**, explicit failed hypotheses, frozen provenance records, and a hardened runner for future exact reruns. Historical values remain in [`RESULTS.md`](RESULTS.md); new results are versioned beside them.
+This repository began as a transparent reconstruction of a documented July 2026 protocol. It now contains a separate Qwen regeneration with **partial metric agreement**, explicit failed hypotheses, frozen provenance records, and a hardened runner for future exact reruns. Historical values remain in [`RESULTS.md`](RESULTS.md); new results are versioned beside them.
 
 — Bobby Morong, independent researcher
