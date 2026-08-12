@@ -1,8 +1,5 @@
-# Environment recorded for the independent 2026-08-12 regeneration.
-# This file records provenance; it does not replace the broader supported ranges in ../requirements.txt.
+# Environment versions explicitly recorded for the independent 2026-08-12 regeneration.
+# Unrecorded package versions are intentionally not invented.
 torch==2.13.0
 transformers==4.57.6
 datasets==3.6.0
-pandas==2.3.1
-pyarrow==21.0.0
-numpy==2.3.2
