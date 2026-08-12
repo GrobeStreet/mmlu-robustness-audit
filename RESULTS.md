@@ -1,6 +1,6 @@
 # Frozen results and regenerated comparison
 
-This file separates **historical reported results** from **independently regenerated outputs**. They must not be silently conflated.
+This file separates **historical reported results** from **separately regenerated outputs**. They must not be silently conflated.
 
 ## 1. Frozen historical record
 
@@ -30,9 +30,9 @@ Protocol recorded in the July/August 2026 handoff: 300 fixed-seed MMLU test ques
 
 These figures remain preserved as historical reported values. The original local scripts/raw parquet artifact were not available when this public repository was reconstructed.
 
-## 2. Independent Qwen regeneration — 2026-08-12
+## 2. Separate Qwen regeneration — 2026-08-12
 
-The reconstructed public harness was independently executed at two numerical precisions on CPU.
+The reconstructed public harness was executed again at two numerical precisions on CPU, separately from the unavailable July run. This is not a claim of independent human verification.
 
 | Metric | Frozen | bf16 | fp32 |
 |---|---:|---:|---:|
@@ -81,8 +81,8 @@ The displayed-label distribution is strongly asymmetric while underlying chosen 
 
 - Full regeneration narrative: [`regeneration/REGENERATION.md`](regeneration/REGENERATION.md)
 - Machine-readable record: [`regeneration/PROVENANCE.json`](regeneration/PROVENANCE.json)
-- The 2026-08-12 independent run environment was Python 3.11.15, torch 2.13.0, transformers 4.57.6, datasets 3.6.0, CPU.
-- The original independent run used the then-default Hugging Face revisions and did not record immutable commit hashes at execution time.
+- The 2026-08-12 regeneration environment was Python 3.11.15, torch 2.13.0, transformers 4.57.6, datasets 3.6.0, CPU.
+- The 2026-08-12 runs used the then-default Hugging Face revisions and did not record immutable commit hashes at execution time.
 - Future runs are pinned to model revision `7ae557604adf67be50417f59c2c2f167def9a775` and dataset revision `c30699e8356da336a370243923dbaf21066bb9fe` and automatically write a SHA-256 provenance sidecar.
 - No claim is made that the frozen historical values are wrong; only that several do not regenerate under the surviving public harness at either bf16 or fp32.
 - Llama-3.2-3B-Instruct remains unregenerated.
