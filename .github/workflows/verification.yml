@@ -23,7 +23,7 @@ jobs:
       - name: Compile public analysis sources
         run: python -m py_compile audit_full.py analyze.py audit_utils.py
       - name: Run regression tests
-        run: pytest -q
+        run: python -m pytest -q
       - name: Verify release metadata and regeneration record
         run: |
           test -s README.md
