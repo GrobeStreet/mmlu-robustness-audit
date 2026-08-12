@@ -1,0 +1,72 @@
+{
+  "schema_version": 1,
+  "run_date": "2026-08-12",
+  "status": "independent regeneration; partial metric agreement",
+  "protocol": {
+    "script": "audit_full.py",
+    "n_questions": 300,
+    "seed": 0,
+    "rotations_per_question": 4,
+    "n_predictions": 1200,
+    "prompt_format": "raw completion: question, blank line, A-D choices, blank line, Answer:",
+    "model": "Qwen/Qwen2.5-0.5B-Instruct",
+    "device": "CPU"
+  },
+  "future_pinned_inputs": {
+    "model_revision": "7ae557604adf67be50417f59c2c2f167def9a775",
+    "dataset": "cais/mmlu",
+    "dataset_revision": "c30699e8356da336a370243923dbaf21066bb9fe",
+    "note": "These immutable revisions are pinned by this PR for future reruns. The original independent 2026-08-12 runs used the then-default revisions and did not record commit hashes at execution time."
+  },
+  "environment": {
+    "python": "3.11.15",
+    "torch": "2.13.0",
+    "transformers": "4.57.6",
+    "datasets": "3.6.0",
+    "device": "CPU"
+  },
+  "bf16_summary": {
+    "headline_accuracy_rotation0": 0.437,
+    "all_rotation_accuracy": 0.436,
+    "stable_rate": 0.213,
+    "flip_rate": 0.787,
+    "accuracy_on_stable_questions": 0.766,
+    "accuracy_on_flipping_questions": 0.346,
+    "ece_10_bin": 0.132,
+    "mean_four_label_confidence": 0.568,
+    "exact_tie_predictions": 100,
+    "prediction_display_counts": {"A": 290, "B": 378, "C": 377, "D": 155},
+    "prediction_underlying_counts": {"A": 311, "B": 294, "C": 306, "D": 289}
+  },
+  "fp32_summary": {
+    "headline_accuracy_rotation0": 0.440,
+    "all_rotation_accuracy": 0.431,
+    "stable_rate": 0.217,
+    "flip_rate": 0.783,
+    "accuracy_on_stable_questions": 0.754,
+    "accuracy_on_flipping_questions": 0.341,
+    "ece_10_bin": 0.137,
+    "mean_four_label_confidence": 0.568,
+    "exact_tie_predictions": 0,
+    "prediction_display_counts": {"A": 272, "B": 379, "C": 383, "D": 166},
+    "prediction_underlying_counts": {"A": 308, "B": 290, "C": 309, "D": 293}
+  },
+  "tie_control": {
+    "positional_argmax_flip_rate": 0.787,
+    "random_tie_break_mean_flip_rate": 0.785,
+    "random_tie_break_95_interval": [0.777, 0.793],
+    "reseeds": 200,
+    "tie_excluded_flip_rate": 0.717
+  },
+  "hashes": {
+    "source_regeneration_report_sha256": "a0a84f3f465e1a90efa39001f45061c4ecea15a35c5372da96e8cce13dd0138d",
+    "bf16_parquet_sha256": null,
+    "fp32_parquet_sha256": null,
+    "note": "The independent-run parquet artifacts were not supplied to this GitHub-writing session, so their hashes are not invented. Updated audit_full.py writes a SHA-256 provenance sidecar automatically for future runs."
+  },
+  "unverified": [
+    "Llama-3.2-3B-Instruct arm",
+    "byte-level identity with the unavailable July 2026 raw run",
+    "independent second-person execution"
+  ]
+}
