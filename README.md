@@ -5,17 +5,26 @@
 [![Citation metadata](https://img.shields.io/badge/citation-CFF-78e6c4.svg)](CITATION.cff)
 [![Status: regenerated — partial metric agreement](https://img.shields.io/badge/status-regenerated_%E2%80%94_partial_metric_agreement-2a3b55.svg)](regeneration/REGENERATION.md)
 
-A small, reproducible stress test of multiple-choice benchmark validity.
+**Question:** does a model keep the same underlying answer when multiple-choice options are cyclically reordered but the question itself is unchanged?
 
-This audit asks: **does a model give the same underlying answer when answer choices are cyclically reordered but the question itself is unchanged?**
+## Headline result
 
-## Current evidence status
+The separately regenerated `Qwen/Qwen2.5-0.5B-Instruct` harness changes its underlying answer on roughly **78% of sampled questions** under four cyclic reorderings in both bf16 and fp32. Accuracy on the questions that flip remains near chance.
 
-The public harness has now been separately regenerated on `Qwen/Qwen2.5-0.5B-Instruct` under both bf16 and fp32. The central robustness finding regenerated; several historical calibration/stability quantities did not. The original July raw artifact is unavailable, so the repository preserves the historical table and the regenerated table separately rather than silently replacing either one.
+The central robustness result regenerated. Several historical calibration/stability quantities did **not**, so the repository preserves both records instead of silently replacing the older values.
 
-See [`regeneration/REGENERATION.md`](regeneration/REGENERATION.md) and [`regeneration/PROVENANCE.json`](regeneration/PROVENANCE.json).
+## Proof / receipts
 
-## Headline: frozen vs regenerated
+- **Green CI:** [verification workflow](https://github.com/GrobeStreet/mmlu-robustness-audit/actions/workflows/verification.yml)
+- **Regeneration record:** [`regeneration/REGENERATION.md`](regeneration/REGENERATION.md)
+- **Machine-readable provenance:** [`regeneration/PROVENANCE.json`](regeneration/PROVENANCE.json)
+- **Historical + regenerated tables:** [`RESULTS.md`](RESULTS.md)
+- **Frozen future rerun inputs:** model + dataset revisions, dtype, device, prompt format, seed, and sample size are explicit below
+- **Controls that failed to explain the effect:** random tie-breaking and fp32 rerun
+
+**Verification status:** regeneration complete with **partial metric agreement**. No second human verifier has executed the package yet.
+
+## Frozen vs regenerated
 
 | Metric | Frozen historical | bf16 regeneration | fp32 regeneration |
 |---|---:|---:|---:|
@@ -28,25 +37,24 @@ See [`regeneration/REGENERATION.md`](regeneration/REGENERATION.md) and [`regener
 | 10-bin ECE | 0.28 | 0.132 | **0.137** |
 | Mean four-label confidence | 69.1% | 56.8% | **56.8%** |
 
-**What regenerated:** headline accuracy, near-chance performance on flipping questions, and the central finding that the underlying answer changes on a majority of questions under a meaning-preserving reorder. The regenerated flip rate is higher than the frozen value.
+**What regenerated:** headline accuracy, near-chance performance on flipping questions, and the majority-flip robustness failure.
 
-**What did not regenerate:** the historical stable rate, accuracy on stable questions, ECE, and mean confidence. The earlier two-model claim that the larger model was *much better calibrated* must therefore be treated as historical/unconfirmed until that arm is rerun and the provenance gap is resolved.
+**What did not regenerate:** the historical stable rate, stable-question accuracy, ECE, and mean four-label confidence. The historical claim that the larger comparison model was *much better calibrated* remains unconfirmed until that arm is rerun.
 
-## Tie control
+## Tie and precision controls
 
-The bf16 run contained 100 exact top-score ties out of 1,200 predictions. A pre-committed concern was that positional `argmax` tie-breaking might manufacture flips. It did not:
+The bf16 run contained 100 exact top-score ties out of 1,200 predictions. If positional `argmax` tie-breaking were manufacturing the effect, a randomized tie-break or fp32 rerun should substantially reduce it. They did not.
 
-| Tie policy | Flip rate |
+| Control | Flip rate |
 |---|---:|
-| Positional `argmax` | 78.7% |
-| Random tie-break, 200 reseeds | **78.5%** [77.7, 79.3] |
-| Exclude all tie-affected questions | **71.7%** |
+| bf16 positional `argmax` | 78.7% |
+| bf16 random tie-break, 200 reseeds | **78.5%** [77.7, 79.3] |
+| bf16 excluding tie-affected questions | **71.7%** |
+| fp32, zero exact ties | **78.3%** |
 
-The fp32 run eliminated every exact tie and still produced a 78.3% flip rate. The robustness finding therefore does not depend on bf16 ties or positional tie-breaking.
+These controls reject two plausible implementation explanations without claiming they explain the remaining historical discrepancy.
 
-## Positional bias
-
-The rotation design also exposes a strong displayed-label asymmetry:
+## Positional asymmetry
 
 | | A | B | C | D |
 |---|---:|---:|---:|---:|
@@ -55,11 +63,9 @@ The rotation design also exposes a strong displayed-label asymmetry:
 | Underlying answer chosen, bf16 | 311 | 294 | 306 | 289 |
 | Underlying answer chosen, fp32 | 308 | 290 | 309 | 293 |
 
-Displayed positions B/C are favored while D is strongly avoided, yet underlying selected answers remain near-uniform. That contrast localizes the effect to display position rather than answer content.
+Displayed positions B/C are favored and D is avoided while underlying selections remain much closer to uniform. This supports a positional-bias interpretation rather than a simple answer-content frequency explanation.
 
-## Frozen protocol for future reruns
-
-The hardened runner now pins the current immutable Hugging Face revisions and records prompt, dtype, device, environment, output hash, ties, margins, and entropy.
+## Reproduce the frozen protocol
 
 ```bash
 python -m pip install -r requirements.txt
@@ -75,20 +81,20 @@ python audit_full.py \
 python analyze.py audit_results.parquet --json-out audit_summary.json
 ```
 
-Prompt format is explicitly frozen as raw completion: question, blank line, A–D choices, blank line, `Answer:`. No chat template is used.
+Prompt format is frozen as raw completion: question, blank line, A–D choices, blank line, `Answer:`. No chat template is used.
 
-## Interpretation limits
+## What this does not claim
 
 - Four cyclic rotations are tested, not all 24 permutations.
 - This is an option-order robustness test, not a contamination test.
-- The score is based on normalized next-token logits for `A/B/C/D`; "confidence" therefore means **four-label normalized confidence**, not a model-authored confidence statement.
-- The 300-question sample is deliberately small; estimates should not be treated as benchmark-wide constants.
-- The original July run's raw predictions and exact execution provenance are unavailable, so frozen historical values are not claimed to be reproduced where the new runs disagree.
+- “Confidence” means normalized next-token probability over `A/B/C/D`, not a model-authored confidence statement.
+- The 300-question sample is intentionally small and should not be treated as a benchmark-wide constant.
+- The original July raw predictions and exact execution provenance are unavailable.
 - The Llama-3.2-3B arm remains unregenerated.
-- No second human verifier has executed the package yet.
+- No second human verifier has executed the package.
 
-## Repository status and provenance
+## Status
 
-This repository began as a transparent reconstruction of a documented July 2026 protocol. It now contains a separate Qwen regeneration with **partial metric agreement**, explicit failed hypotheses, frozen provenance records, and a hardened runner for future exact reruns. Historical values remain in [`RESULTS.md`](RESULTS.md); new results are versioned beside them.
+This repository began as a transparent reconstruction of a documented July 2026 protocol. It now contains a separate Qwen regeneration, explicit failed hypotheses, versioned historical/regenerated results, regression tests, CI, provenance records, and a hardened runner for future reruns.
 
-— Bobby Morong, independent researcher
+— Robert “Bobby” Morong, independent researcher
