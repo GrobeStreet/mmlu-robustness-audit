@@ -56,6 +56,11 @@ jobs:
             -T seed=0 \
             --log-dir inspect-logs \
             2>&1 | tee inspect-parity-console.txt
+          if grep -q "Task interrupted" inspect-parity-console.txt; then
+            echo "Inspect reported an interrupted task" >&2
+            exit 1
+          fi
+          test -n "$(find inspect-logs -maxdepth 1 -name '*.eval' -print -quit)"
       - name: List outputs
         if: always()
         run: |
