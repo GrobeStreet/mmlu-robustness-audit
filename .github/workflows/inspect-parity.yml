@@ -31,6 +31,7 @@ jobs:
           python -m pip install --upgrade pip
           python -m pip install -r requirements.txt
           python -m pip install -r requirements-inspect.txt
+          python -m pip install -e .
       - name: Show versions
         run: |
           python - <<'PY'
