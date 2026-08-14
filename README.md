@@ -16,6 +16,7 @@ The central robustness result regenerated. Several historical calibration/stabil
 ## Proof / receipts
 
 - **Green CI:** [verification workflow](https://github.com/GrobeStreet/mmlu-robustness-audit/actions/workflows/verification.yml)
+- **Inspect AI port:** [`inspect_eval/`](inspect_eval/) preserves the fixed-seed rotations, raw-completion boundary, and normalized A/B/C/D next-token scoring inside Inspect
 - **Regeneration record:** [`regeneration/REGENERATION.md`](regeneration/REGENERATION.md)
 - **Machine-readable provenance:** [`regeneration/PROVENANCE.json`](regeneration/PROVENANCE.json)
 - **Historical + regenerated tables:** [`RESULTS.md`](RESULTS.md)
@@ -65,6 +66,24 @@ These controls reject two plausible implementation explanations without claiming
 
 Displayed positions B/C are favored and D is avoided while underlying selections remain much closer to uniform. This supports a positional-bias interpretation rather than a simple answer-content frequency explanation.
 
+## Inspect AI port
+
+The audit now has an [Inspect AI](https://inspect.aisi.org.uk/) implementation under [`inspect_eval/`](inspect_eval/). A custom local Hugging Face provider keeps the original measurement instrument intact rather than silently switching to a chat-style multiple-choice prompt.
+
+```bash
+python -m pip install -r requirements.txt
+python -m pip install -r requirements-inspect.txt
+inspect eval inspect_eval/mmlu_option_order.py \
+  --model mmlu-labels/Qwen/Qwen2.5-0.5B-Instruct \
+  -M revision=7ae557604adf67be50417f59c2c2f167def9a775 \
+  -M dtype=float32 \
+  -M device=cpu \
+  -T n=300 \
+  -T seed=0
+```
+
+Inspect owns the structured run log and aggregation while the custom provider preserves raw completion and normalized next-token scoring over only `A/B/C/D`. See [`inspect_eval/README.md`](inspect_eval/README.md) for the comparability boundary and smoke-test command.
+
 ## Reproduce the frozen protocol
 
 ```bash
@@ -95,6 +114,6 @@ Prompt format is frozen as raw completion: question, blank line, A–D choices, 
 
 ## Status
 
-This repository began as a transparent reconstruction of a documented July 2026 protocol. It now contains a separate Qwen regeneration, explicit failed hypotheses, versioned historical/regenerated results, regression tests, CI, provenance records, and a hardened runner for future reruns.
+This repository began as a transparent reconstruction of a documented July 2026 protocol. It now contains a separate Qwen regeneration, explicit failed hypotheses, versioned historical/regenerated results, regression tests, CI, provenance records, a hardened runner, and an Inspect AI translation layer for future reruns and evaluation-framework interoperability.
 
 — Robert “Bobby” Morong, independent researcher

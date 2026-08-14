@@ -19,9 +19,9 @@ jobs:
           python-version: "3.11"
           cache: pip
       - name: Install analysis-test dependencies
-        run: python -m pip install numpy pandas pytest
+        run: python -m pip install numpy pandas pytest -r requirements-inspect.txt
       - name: Compile public analysis sources
-        run: python -m py_compile audit_full.py analyze.py audit_utils.py
+        run: python -m py_compile audit_full.py analyze.py audit_utils.py inspect_eval/provider.py inspect_eval/mmlu_option_order.py
       - name: Run regression tests
         run: python -m pytest -q
       - name: Verify release metadata and regeneration record
@@ -32,3 +32,5 @@ jobs:
           test -s LICENSE
           test -s regeneration/REGENERATION.md
           test -s regeneration/PROVENANCE.json
+          test -s inspect_eval/README.md
+          test -s requirements-inspect.txt
