@@ -8,11 +8,13 @@ A/B/C/D next-token scoring rule used by the regenerated public harness.
 
 from __future__ import annotations
 
+import math
 import random
 from collections import defaultdict
 from typing import Any, Iterable
 
-# Import registers the custom model provider with Inspect.
+# Import also makes direct Python use register the custom provider. CLI use is
+# registered earlier through the package's inspect_ai entry point.
 import inspect_eval.provider  # noqa: F401
 from inspect_ai import Task, task
 from inspect_ai.dataset import MemoryDataset, Sample
@@ -36,6 +38,7 @@ DATASET_NAME = "cais/mmlu"
 DATASET_CONFIG = "all"
 DATASET_SPLIT = "test"
 DATASET_REVISION = "c30699e8356da336a370243923dbaf21066bb9fe"
+EXPECTED_ROTATIONS = frozenset(range(4))
 
 
 def rotate_choices(choices: list[str], rotation: int) -> list[str]:
@@ -134,28 +137,41 @@ def _score_rows(scores: list[SampleScore]) -> list[dict[str, Any]]:
 
 
 def summarize_rows(rows: list[dict[str, Any]]) -> dict[str, float]:
-    """Pure aggregation helper used by Inspect metrics and unit tests."""
+    """Aggregate rows safely during both partial and completed Inspect runs.
 
+    Inspect may evaluate metrics incrementally before all samples have completed.
+    Question-level robustness metrics therefore use only questions for which all
+    four rotations are present. Sample-level rotation-0 accuracy and confidence
+    use whatever valid rows are currently available. At final evaluation, every
+    question is complete and these quantities match the frozen definitions.
+    """
+
+    empty = {
+        "flip_rate": float("nan"),
+        "rotation0_accuracy": float("nan"),
+        "stable_accuracy": float("nan"),
+        "flipping_accuracy": float("nan"),
+        "mean_four_label_confidence": float("nan"),
+    }
     if not rows:
-        return {
-            "flip_rate": float("nan"),
-            "rotation0_accuracy": float("nan"),
-            "stable_accuracy": float("nan"),
-            "flipping_accuracy": float("nan"),
-            "mean_four_label_confidence": float("nan"),
-        }
+        return empty
 
     by_question: dict[int, list[dict[str, Any]]] = defaultdict(list)
     for row in rows:
         by_question[int(row["question_rank"])].append(row)
 
+    complete_questions = {
+        qid: qrows
+        for qid, qrows in by_question.items()
+        if {int(row["rotation"]) for row in qrows} == EXPECTED_ROTATIONS
+    }
+    complete_ids = set(complete_questions)
     stable_ids = {
         qid
-        for qid, qrows in by_question.items()
+        for qid, qrows in complete_questions.items()
         if len({int(row["pred_underlying"]) for row in qrows}) == 1
     }
-    all_ids = set(by_question)
-    flipping_ids = all_ids - stable_ids
+    flipping_ids = complete_ids - stable_ids
 
     def accuracy_for(question_ids: set[int]) -> float:
         selected = [
@@ -166,13 +182,26 @@ def summarize_rows(rows: list[dict[str, Any]]) -> dict[str, float]:
         return sum(selected) / len(selected) if selected else float("nan")
 
     rotation0 = [bool(row["correct"]) for row in rows if int(row["rotation"]) == 0]
-    confidences = [float(row["confidence"]) for row in rows]
+    confidences = [
+        float(row["confidence"])
+        for row in rows
+        if math.isfinite(float(row["confidence"]))
+    ]
+
     return {
-        "flip_rate": len(flipping_ids) / len(all_ids),
-        "rotation0_accuracy": sum(rotation0) / len(rotation0),
+        "flip_rate": (
+            len(flipping_ids) / len(complete_ids)
+            if complete_ids
+            else float("nan")
+        ),
+        "rotation0_accuracy": (
+            sum(rotation0) / len(rotation0) if rotation0 else float("nan")
+        ),
         "stable_accuracy": accuracy_for(stable_ids),
         "flipping_accuracy": accuracy_for(flipping_ids),
-        "mean_four_label_confidence": sum(confidences) / len(confidences),
+        "mean_four_label_confidence": (
+            sum(confidences) / len(confidences) if confidences else float("nan")
+        ),
     }
 
 
