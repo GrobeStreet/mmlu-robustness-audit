@@ -8,7 +8,7 @@ on:
       n:
         description: Number of MMLU questions
         required: true
-        default: "8"
+        default: "300"
 
 permissions:
   contents: read
@@ -45,7 +45,7 @@ jobs:
         shell: bash
         run: |
           N="${{ github.event.inputs.n }}"
-          if [ -z "$N" ]; then N=8; fi
+          if [ -z "$N" ]; then N=300; fi
           mkdir -p inspect-logs
           inspect eval inspect_eval/mmlu_option_order.py \
             --model mmlu-labels/Qwen/Qwen2.5-0.5B-Instruct \
@@ -70,7 +70,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: inspect-parity-${{ github.event.inputs.n || '8' }}
+          name: inspect-parity-${{ github.event.inputs.n || '300' }}
           path: |
             inspect-logs/**
             inspect-parity-console.txt
