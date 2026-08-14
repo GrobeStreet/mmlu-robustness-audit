@@ -1,0 +1,71 @@
+name: Inspect parity validation
+
+on:
+  push:
+    branches: [validation/inspect-parity]
+  workflow_dispatch:
+    inputs:
+      n:
+        description: Number of MMLU questions
+        required: true
+        default: "8"
+
+permissions:
+  contents: read
+
+jobs:
+  parity:
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    env:
+      HF_HOME: ${{ github.workspace }}/.hf-cache
+      TRANSFORMERS_CACHE: ${{ github.workspace }}/.hf-cache
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+      - name: Install parity environment
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -r requirements.txt
+          python -m pip install -r requirements-inspect.txt
+      - name: Show versions
+        run: |
+          python - <<'PY'
+          import datasets, inspect_ai, torch, transformers
+          print('inspect-ai', inspect_ai.__version__)
+          print('torch', torch.__version__)
+          print('transformers', transformers.__version__)
+          print('datasets', datasets.__version__)
+          PY
+      - name: Run Inspect parity evaluation
+        shell: bash
+        run: |
+          N="${{ github.event.inputs.n }}"
+          if [ -z "$N" ]; then N=8; fi
+          mkdir -p inspect-logs
+          inspect eval inspect_eval/mmlu_option_order.py \
+            --model mmlu-labels/Qwen/Qwen2.5-0.5B-Instruct \
+            -M revision=7ae557604adf67be50417f59c2c2f167def9a775 \
+            -M dtype=float32 \
+            -M device=cpu \
+            -T n="$N" \
+            -T seed=0 \
+            --log-dir inspect-logs \
+            2>&1 | tee inspect-parity-console.txt
+      - name: List outputs
+        if: always()
+        run: |
+          find inspect-logs -maxdepth 3 -type f -print || true
+          tail -n 200 inspect-parity-console.txt || true
+      - name: Upload Inspect logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: inspect-parity-${{ github.event.inputs.n || '8' }}
+          path: |
+            inspect-logs/**
+            inspect-parity-console.txt
+          if-no-files-found: warn
