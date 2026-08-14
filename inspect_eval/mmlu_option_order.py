@@ -30,6 +30,7 @@ from inspect_ai.scorer import (
     accuracy,
     metric,
     scorer,
+    value_to_float,
 )
 from inspect_ai.solver import TaskState, generate
 
@@ -39,6 +40,7 @@ DATASET_CONFIG = "all"
 DATASET_SPLIT = "test"
 DATASET_REVISION = "c30699e8356da336a370243923dbaf21066bb9fe"
 EXPECTED_ROTATIONS = frozenset(range(4))
+SCORE_TO_FLOAT = value_to_float()
 
 
 def rotate_choices(choices: list[str], rotation: int) -> list[str]:
@@ -129,7 +131,10 @@ def _score_rows(scores: list[SampleScore]) -> list[dict[str, Any]]:
                 "question_rank": int(sample_meta["question_rank"]),
                 "rotation": int(sample_meta["rotation"]),
                 "pred_underlying": int(score_meta["pred_underlying"]),
-                "correct": sample_score.score.value == CORRECT,
+                # Inspect's default mean reducer can convert C/I into numeric
+                # 1/0 before custom metrics are called. value_to_float handles
+                # both unreduced strings and reduced numeric values.
+                "correct": bool(SCORE_TO_FLOAT(sample_score.score.value)),
                 "confidence": float(score_meta.get("confidence", float("nan"))),
             }
         )
