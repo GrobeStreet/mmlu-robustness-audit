@@ -1,0 +1,55 @@
+{
+  "status": "validated parity for pinned fp32 Qwen arm",
+  "date_utc": "2026-08-14",
+  "task": "mmlu_option_order",
+  "n_questions": 300,
+  "rotations_per_question": 4,
+  "n_samples": 1200,
+  "seed": 0,
+  "dataset": "cais/mmlu",
+  "dataset_config": "all",
+  "dataset_split": "test",
+  "dataset_revision": "c30699e8356da336a370243923dbaf21066bb9fe",
+  "model": "Qwen/Qwen2.5-0.5B-Instruct",
+  "model_revision": "7ae557604adf67be50417f59c2c2f167def9a775",
+  "dtype": "float32",
+  "device": "cpu",
+  "inspect_ai": "0.3.249",
+  "python": "3.11.15",
+  "torch": "2.13.0+cu130",
+  "transformers": "4.57.6",
+  "datasets": "3.6.0",
+  "metrics": {
+    "accuracy_all_rotations": 0.431,
+    "rotation0_accuracy": 0.440,
+    "option_order_flip_rate": 0.783,
+    "stable_question_accuracy": 0.754,
+    "flipping_question_accuracy": 0.341,
+    "mean_four_label_confidence": 0.568
+  },
+  "reference_fp32_metrics": {
+    "accuracy_all_rotations": 0.431,
+    "rotation0_accuracy": 0.440,
+    "option_order_flip_rate": 0.783,
+    "stable_question_accuracy": 0.754,
+    "flipping_question_accuracy": 0.341,
+    "mean_four_label_confidence": 0.568
+  },
+  "parity": "exact at reported precision for all implemented headline metrics",
+  "github_actions": {
+    "run_id": 31845022558,
+    "job_id": 94909562425,
+    "execution_commit": "c7e57edd1d4b0770f725f74eecb7479ffe6a38c7",
+    "artifact_name": "inspect-parity-300",
+    "artifact_id": 9235962582,
+    "artifact_zip_sha256": "6261c1c5e305dd4e33194839d6f8d718c7eb81ab72bf6d2b3e92545a9fee4d93"
+  },
+  "limitations": [
+    "historical July calibration/stability values remain only partially regenerated",
+    "bf16 arm not covered by this parity run",
+    "Llama arm not regenerated",
+    "no independent third-party human verification",
+    "four cyclic rotations only, not all 24 permutations",
+    "not a benchmark-contamination test"
+  ]
+}

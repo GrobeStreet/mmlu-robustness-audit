@@ -79,7 +79,7 @@ class MMLULabelLogitAPI(ModelAPI):
         self.model = AutoModelForCausalLM.from_pretrained(
             model_name,
             revision=revision,
-            torch_dtype=dtype_map[dtype_name],
+            dtype=dtype_map[dtype_name],
         )
         self.model.to(self.device)
         self.model.eval()
