@@ -1,13 +1,11 @@
 name: Inspect parity validation
 
 on:
-  push:
-    branches: [validation/inspect-parity]
   workflow_dispatch:
     inputs:
       n:
-        description: Number of MMLU questions
-        required: true
+        description: Number of MMLU questions (4 rotations each)
+        required: false
         default: "300"
 
 permissions:
@@ -15,11 +13,10 @@ permissions:
 
 jobs:
   parity:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 180
     env:
       HF_HOME: ${{ github.workspace }}/.hf-cache
-      TRANSFORMERS_CACHE: ${{ github.workspace }}/.hf-cache
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -44,6 +41,7 @@ jobs:
       - name: Run Inspect parity evaluation
         shell: bash
         run: |
+          set -o pipefail
           N="${{ github.event.inputs.n }}"
           if [ -z "$N" ]; then N=300; fi
           mkdir -p inspect-logs
