@@ -1,0 +1,200 @@
+\documentclass[10pt]{article}
+\usepackage[margin=0.82in]{geometry}
+\usepackage{amsmath}
+\usepackage{booktabs}
+\usepackage{microtype}
+\usepackage[hidelinks]{hyperref}
+\usepackage{url}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{0.55em}
+
+\title{A Reproducible MMLU Option-Order Robustness Evaluation in Inspect AI}
+\author{Robert Morong\\Independent researcher, San Diego, California, USA\\\texttt{bobbyopsassistant@gmail.com}}
+\date{August 2026}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+Multiple-choice evaluations usually assume that a model's answer is invariant to semantically irrelevant changes in answer-option order. We implement a reproducible stress test of that assumption on a fixed sample of 300 MMLU test questions using four cyclic option rotations per question. For each prompt, a model is scored by normalized next-token logits over only \texttt{A/B/C/D}; displayed choices are then mapped back to the underlying answer identity before robustness is measured. On the pinned \texttt{Qwen/Qwen2.5-0.5B-Instruct} checkpoint in float32 on CPU, the model changes its underlying answer on 78.3\% of sampled questions. Accuracy across all rotations is 43.1\%, while accuracy on predictions from flipping questions is 34.1\%. The displayed label distribution is strongly asymmetric even though underlying selected answers are close to uniform. A bfloat16 run, randomized tie-breaking, and a zero-tie float32 rerun do not remove the effect. We then re-implement the evaluation in Inspect AI using a separate task/provider/scorer path while preserving the raw-completion measurement boundary; the 1,200-sample Inspect run exactly matches all implemented headline float32 metrics at reported precision. The package pins model and dataset revisions, records provenance, includes regression tests and CI, and explicitly preserves historical values that did not regenerate. This paper documents the evaluation methodology and reproducibility evidence rather than claiming a benchmark-wide constant from a single small model and sample.
+\end{abstract}
+
+\section{Introduction}
+
+MMLU is a widely used multitask multiple-choice benchmark spanning 57 subjects and was introduced to measure broad knowledge and problem-solving performance in language models \cite{hendrycks2020mmlu}. Standard multiple-choice reporting usually treats the ordering of answer options as incidental: if the question and answer content are unchanged, a model should ideally select the same underlying answer after a permutation of the displayed choices.
+
+Prior work has shown that large language models can violate this assumption. Pezeshkpour and Hruschka report substantial sensitivity to answer-option order across multiple-choice benchmarks and relate the effect to uncertainty and positional bias \cite{pezeshkpour2023order}. Wei et al. further study order and token selection biases as distinct sources of instability in ordered-choice tasks \cite{wei2024selection}.
+
+This work contributes a compact, reproducible evaluation artifact rather than a new large benchmark sweep. We ask one operational question: \emph{does the model keep the same underlying answer when the same MMLU question is presented under four cyclic answer-option rotations?} We freeze the sample, prompt boundary, score rule, model checkpoint, dataset revision, numerical precision, and aggregation logic. We also provide a separate implementation in Inspect AI, an open-source evaluation framework developed by the UK AI Security Institute \cite{inspect2024}, and require parity between implementations before treating the translation as validated.
+
+The public repository began as a reconstruction of an earlier July 2026 audit whose raw predictions and exact execution provenance were unavailable. A subsequent regeneration recovered the central robustness finding but not several historical stability and calibration quantities. We therefore separate historical values from regenerated evidence rather than silently replacing one with the other.
+
+\section{Evaluation design}
+
+\subsection{Data and sampling}
+
+We use the \texttt{cais/mmlu} test split, configuration \texttt{all}, pinned to dataset revision
+\begin{center}
+\small\texttt{c30699e8356da336a370243923dbaf21066bb9fe}.
+\end{center}
+The evaluation shuffles test indices with Python's fixed-seed pseudorandom generator using seed 0 and selects the first 300 questions. This produces a fixed evaluation set rather than a benchmark-wide census.
+
+For each question with four answer choices, we construct four cyclic rotations. If the original choice indices are $(0,1,2,3)$, rotation $r\in\{0,1,2,3\}$ displays $(r,r+1,r+2,r+3)\bmod 4$. We test only these four rotations, not all $4!=24$ permutations.
+
+\subsection{Prompt and score boundary}
+
+The prompt is a raw completion prompt, not a chat-template prompt:
+
+\begin{verbatim}
+<Question text>
+
+A. <choice 1>
+B. <choice 2>
+C. <choice 3>
+D. <choice 4>
+
+Answer:
+\end{verbatim}
+
+At the final token position, we extract the logits associated with the single-token labels \texttt{A}, \texttt{B}, \texttt{C}, and \texttt{D}. Let these logits be $\ell_A,\ldots,\ell_D$. The reported four-label confidence distribution is
+\begin{equation}
+ p_j = \frac{\exp(\ell_j)}{\sum_{k\in\{A,B,C,D\}}\exp(\ell_k)}.
+\end{equation}
+The displayed prediction is the label with largest $p_j$.
+
+Because a displayed label refers to a different underlying answer after rotation, predictions are mapped back before robustness is computed. If displayed index $d_r\in\{0,1,2,3\}$ is selected at rotation $r$, the underlying selected answer is
+\begin{equation}
+ u_r=(d_r+r)\bmod 4.
+\end{equation}
+A question is \emph{stable} if $u_0=u_1=u_2=u_3$ and \emph{flipping} otherwise.
+
+\subsection{Metrics}
+
+The Inspect task reports six primary metrics:
+
+\begin{enumerate}
+\item rotation-0 accuracy;
+\item accuracy across all four rotations;
+\item option-order flip rate, the fraction of questions with more than one underlying prediction across rotations;
+\item accuracy over all rotated predictions belonging to stable questions;
+\item accuracy over all rotated predictions belonging to flipping questions; and
+\item mean normalized four-label confidence.
+\end{enumerate}
+
+The repository also records tie diagnostics, per-label positional counts, entropy, margins, and historical expected-calibration-error calculations. Those diagnostics are useful for analysis but are not all part of the minimal Inspect headline metric set.
+
+\section{Pinned result}
+
+The validated float32 run uses \texttt{Qwen/Qwen2.5-0.5B-Instruct} at model revision
+\begin{center}
+\small\texttt{7ae557604adf67be50417f59c2c2f167def9a775},
+\end{center}
+with CPU inference, $n=300$, seed 0, and 1,200 total rotated prompts.
+
+\begin{table}[h]
+\centering
+\caption{Validated float32 result. ``Inspect'' is a separate implementation of the same measurement protocol.}
+\label{tab:parity}
+\begin{tabular}{lrr}
+\toprule
+Metric & Hardened run & Inspect \\
+\midrule
+Rotation-0 accuracy & 44.0\% & 44.0\% \\
+All-rotation accuracy & 43.1\% & 43.1\% \\
+Option-order flip rate & 78.3\% & 78.3\% \\
+Stable-question accuracy & 75.4\% & 75.4\% \\
+Flipping-question accuracy & 34.1\% & 34.1\% \\
+Mean four-label confidence & 56.8\% & 56.8\% \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The main robustness observation is that a majority of sampled questions are not answer-invariant under the four cyclic reorderings. Predictions on questions that flip are only modestly above the 25\% random-choice floor. This is not equivalent to saying that 78.3\% of all MMLU questions flip for all models; it is the measured value for the pinned model, sample, prompt, and scoring rule.
+
+\subsection{Positional asymmetry}
+
+The displayed prediction counts are strongly non-uniform, while the underlying selected answers are much closer to uniform.
+
+\begin{table}[h]
+\centering
+\caption{Prediction counts across 1,200 float32 prompts.}
+\label{tab:positions}
+\begin{tabular}{lrrrr}
+\toprule
+ & A & B & C & D \\
+\midrule
+Displayed label & 272 & 379 & 383 & 166 \\
+Underlying answer & 308 & 290 & 309 & 293 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+This pattern is consistent with a positional-bias interpretation: displayed positions B and C are favored and D is avoided, but after inverse mapping the underlying answer identities do not show the same imbalance. This localization is descriptive rather than a complete causal explanation.
+
+\section{Controls and reproducibility}
+
+\subsection{Tie and numerical-precision controls}
+
+A bfloat16 execution produced 100 exact top-score ties among 1,200 predictions. Positional \texttt{argmax} tie-breaking could therefore have been a plausible implementation artifact. We tested two controls. First, randomly breaking exact ties over 200 reseeds changed the flip rate from 78.7\% to a mean of 78.5\% with a 77.7--79.3\% range. Second, a float32 rerun eliminated all exact ties while producing a 78.3\% flip rate. Excluding every question touched by an exact bfloat16 tie still leaves a 71.7\% flip rate. These controls reject tie policy and numerical precision as explanations for the headline instability.
+
+\subsection{Separate Inspect AI implementation}
+
+To test implementation dependence, we translated the audit into Inspect AI using a separate task/provider/scorer path. The task uses Inspect's \texttt{@task} interface and structured evaluation logs, while a custom model provider preserves the original raw-completion instrument and normalized next-token scoring over only \texttt{A/B/C/D}. This is necessary because silently changing to a chat-template multiple-choice solver would change the measurement being validated.
+
+The full Inspect run completed all 1,200 samples on a GitHub-hosted Ubuntu 24.04 runner with Python 3.11.15, Inspect AI 0.3.249, PyTorch 2.13.0, Transformers 4.57.6, and Datasets 3.6.0. The six implemented headline metrics match the hardened float32 values exactly at the reported precision (Table~\ref{tab:parity}). The run log and console output were stored as a GitHub Actions artifact, and the parity record includes workflow, job, artifact, and SHA-256 identifiers.
+
+This establishes cross-implementation reproducibility for the pinned float32 headline result. It is stronger than simply invoking the same script twice, but it is not equivalent to an independent third-party human re-derivation.
+
+\subsection{Historical record and non-regeneration}
+
+The repository preserves an earlier frozen July 2026 record because the original raw predictions and exact execution provenance are unavailable. The public harness later regenerated the central majority-flip/near-chance-on-flips finding, but several historical quantities did not match: the historical stable-question rate, accuracy on stable questions, expected calibration error, and mean confidence differ materially from the surviving harness at both bfloat16 and float32. The historical two-model Qwen--Llama calibration contrast is therefore treated as unconfirmed until that arm is rerun. The current paper uses the pinned regenerated float32 values as its primary quantitative result.
+
+\section{Limitations}
+
+This evaluation has deliberately narrow scope. It uses one small open model and a fixed sample of 300 MMLU test questions. It tests four cyclic rotations rather than all 24 permutations. It measures raw-completion next-token behavior over four answer labels, which is a specific evaluation instrument rather than a universal definition of model belief. It is not a contamination test and does not address benchmark validity outside option-order robustness. The current Inspect parity record covers the float32 Qwen arm; the historical Llama arm remains unregenerated. Finally, although the code has multiple automated execution paths, no unrelated human has yet completed a clean-room execution of the package.
+
+These limitations are features of the evidence boundary rather than reasons to suppress the result. The intended use is as a compact robustness check that can be applied to additional models and benchmarks under a frozen, inspectable protocol.
+
+\section{Availability}
+
+Code, frozen results, provenance, tests, CI configuration, and the Inspect implementation are public at
+\begin{center}
+\url{https://github.com/GrobeStreet/mmlu-robustness-audit}.
+\end{center}
+The Inspect Evals registration source is frozen at commit
+\begin{center}
+\small\texttt{c2f0769f696a20bb750d84a72b253a68b01d4ffa}.
+\end{center}
+Model and dataset revisions are pinned in the repository and repeated above. The full parity record is in \texttt{inspect\_eval/PARITY\_2026-08-14.md}.
+
+\section*{AI-assistance disclosure}
+
+AI systems assisted with software development, regeneration analysis, implementation review, and manuscript drafting. They are not authors. The named author is responsible for the study design, public claims, released artifacts, and this manuscript. Automated re-executions are described as such and are not presented as independent human verification.
+
+\begin{thebibliography}{9}
+
+\bibitem{hendrycks2020mmlu}
+D. Hendrycks, C. Burns, S. Basart, A. Zou, M. Mazeika, D. Song, and J. Steinhardt.
+\newblock Measuring Massive Multitask Language Understanding.
+\newblock \emph{arXiv:2009.03300}, 2020.
+
+\bibitem{pezeshkpour2023order}
+P. Pezeshkpour and E. Hruschka.
+\newblock Large Language Models Sensitivity to The Order of Options in Multiple-Choice Questions.
+\newblock \emph{arXiv:2308.11483}, 2023.
+
+\bibitem{wei2024selection}
+S.-L. Wei, C.-K. Wu, H.-H. Huang, and H.-H. Chen.
+\newblock Unveiling Selection Biases: Exploring Order and Token Sensitivity in Large Language Models.
+\newblock \emph{arXiv:2406.03009}, 2024.
+
+\bibitem{inspect2024}
+UK AI Security Institute.
+\newblock Inspect AI: Framework for Large Language Model Evaluations.
+\newblock Open-source software, released May 2024. \url{https://github.com/UKGovernmentBEIS/inspect_ai}.
+
+\end{thebibliography}
+
+\end{document}
