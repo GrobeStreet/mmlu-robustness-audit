@@ -25,6 +25,8 @@ The central robustness result regenerated. Several historical calibration/stabil
 
 **Verification status:** regeneration complete with **partial metric agreement**. No second human verifier has executed the package yet.
 
+**Independent rerun wanted:** the frozen 300-question reproduction command and reporting expectations are in [issue #5](https://github.com/GrobeStreet/mmlu-robustness-audit/issues/5).
+
 ## Frozen vs regenerated
 
 | Metric | Frozen historical | bf16 regeneration | fp32 regeneration |
