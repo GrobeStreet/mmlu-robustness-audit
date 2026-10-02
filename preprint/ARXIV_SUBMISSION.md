@@ -20,7 +20,22 @@ Multiple-choice evaluations usually assume that a model's answer is invariant to
 
 ## Source upload
 
+**Frozen manuscript source commit:** `d624400419c67e80d0129f59e4773c23ecb4482c`
+
 Upload `manuscript.tex` as the primary source. It uses only standard TeX packages and compiles with pdfLaTeX.
+
+## arXiv metadata
+
+- **Primary category:** cs.CL (Computation and Language)
+- **Cross-list:** cs.LG (Machine Learning), if offered/accepted
+- **Journal reference:** leave blank
+- **DOI:** leave blank
+- **Report number:** leave blank
+- **License:** author choice at submission. For maximal reuse, CC BY 4.0 is a reasonable option; otherwise arXiv's perpetual non-exclusive license is also available.
+- **Authors:** Robert Morong
+- **Affiliation:** Independent researcher
+- **Comments:** use the prepared Comments field above
+
 
 Before pressing Submit, confirm:
 
